@@ -65,7 +65,9 @@ def find_browser(choice: str = "auto", path: str | None = None) -> tuple[str, st
 
 
 def _base_args(profile_dir: Path) -> list[str]:
-    return [f"--user-data-dir={profile_dir}", "--no-first-run", "--no-default-browser-check"]
+    # Must be absolute: on Windows, Chrome ignores a relative --user-data-dir and opens the
+    # user's everyday profile instead, where remote debugging is blocked.
+    return [f"--user-data-dir={profile_dir.resolve()}", "--no-first-run", "--no-default-browser-check"]
 
 
 def open_plain(exe: str, profile_dir: Path, url: str) -> subprocess.Popen:
@@ -79,6 +81,7 @@ def connected_browser(
     p: Playwright, exe: str | None, profile_dir: Path, headless: bool
 ) -> Iterator[BrowserContext]:
     """Yield a context for ``profile_dir``, driving a real browser over CDP when possible."""
+    profile_dir = profile_dir.resolve()
     profile_dir.mkdir(parents=True, exist_ok=True)
     if exe is None:
         ctx = p.chromium.launch_persistent_context(str(profile_dir), headless=headless, no_viewport=True)
