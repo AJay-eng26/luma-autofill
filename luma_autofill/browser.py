@@ -14,11 +14,9 @@ from __future__ import annotations
 
 import os
 import shutil
-import socket
 import subprocess
 import sys
 import time
-import urllib.request
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterator
@@ -66,12 +64,6 @@ def find_browser(choice: str = "auto", path: str | None = None) -> tuple[str, st
     return None
 
 
-def _free_port() -> int:
-    with socket.socket() as s:
-        s.bind(("127.0.0.1", 0))
-        return s.getsockname()[1]
-
-
 def _base_args(profile_dir: Path) -> list[str]:
     return [f"--user-data-dir={profile_dir}", "--no-first-run", "--no-default-browser-check"]
 
@@ -96,28 +88,30 @@ def connected_browser(
             ctx.close()
         return
 
-    port = _free_port()
-    cmd = [exe, *_base_args(profile_dir), f"--remote-debugging-port={port}", "about:blank"]
+    # Port 0 lets the browser pick a free port and write it to DevToolsActivePort,
+    # so we never depend on HTTP (or the system proxy) to discover the endpoint.
+    port_file = profile_dir / "DevToolsActivePort"
+    port_file.unlink(missing_ok=True)
+    cmd = [exe, *_base_args(profile_dir), "--remote-debugging-port=0", "about:blank"]
     if headless:
         cmd.insert(1, "--headless=new")
     proc = subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     browser = None
     try:
-        endpoint = f"http://127.0.0.1:{port}"
         deadline = time.time() + 20
         while True:
-            try:
-                urllib.request.urlopen(endpoint + "/json/version", timeout=1).read()
+            lines = port_file.read_text().split() if port_file.exists() else []
+            if len(lines) >= 2:
+                endpoint = f"ws://127.0.0.1:{lines[0]}{lines[1]}"
                 break
-            except OSError:
-                if proc.poll() is not None:
-                    raise SystemExit(
-                        "The browser closed immediately. Close every window that uses this profile "
-                        f"({profile_dir}) and try again."
-                    )
-                if time.time() > deadline:
-                    raise SystemExit("Timed out waiting for the browser to start.")
-                time.sleep(0.25)
+            if time.time() > deadline or (proc.poll() is not None and time.time() > deadline - 15):
+                raise SystemExit(
+                    "Could not connect to the browser. It is probably still running from an earlier step.\n"
+                    "Close every window of that browser (also check the ^ tray icons near the clock), "
+                    "or on Windows run:  taskkill /IM chrome.exe /F   (closes all Chrome windows)\n"
+                    "then try again."
+                )
+            time.sleep(0.25)
         browser = p.chromium.connect_over_cdp(endpoint)
         yield browser.contexts[0] if browser.contexts else browser.new_context()
     finally:
