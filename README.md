@@ -45,6 +45,8 @@ playwright install chromium
 
    The session is saved in `./browser_profile/` (gitignored) and reused on every run.
 
+   The tool drives your installed **Google Chrome**, or **Microsoft Edge** if Chrome isn't installed, because Luma's "Verifying Your Browser" check can stall on Playwright's bundled Chromium. Pick one explicitly with `--browser chrome|msedge|chromium` before the subcommand, e.g. `python -m luma_autofill --browser msedge login`.
+
 ## Usage
 
 ```bash
@@ -85,7 +87,8 @@ Example summary:
 | `--profile` | `profile.json` | Path to your details. |
 | `--headless` | off | Run without a browser window. |
 | `--keep-open` | off | Leave the browser open at the end until you press Enter. |
-| `--browser-profile` | `./browser_profile` | Persistent browser profile directory (put before the subcommand). |
+| `--browser` | `auto` | `chrome`, `msedge`, or `chromium`; `auto` tries them in that order (put before the subcommand). |
+| `--browser-profile` | `./browser_profile` | Folder for saved browser sessions (put before the subcommand). |
 
 ### Exit codes
 
