@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+import time
 from pathlib import Path
 from typing import Callable
 
@@ -177,7 +178,9 @@ def cmd_login(args: argparse.Namespace) -> int:
         proc = browser.open_plain(exe, profile_dir, SIGNIN_URL)
         print("Sign in to Luma in the browser window that just opened.")
         print("When you can see your Luma home page, CLOSE that browser window to save the session.")
-        proc.wait()
+        # Poll instead of a blocking wait() so Ctrl+C still works on Windows.
+        while proc.poll() is None:
+            time.sleep(0.5)
     log(f"Session saved to {profile_dir}")
     return EXIT_OK
 
