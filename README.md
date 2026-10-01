@@ -23,8 +23,8 @@ Luma protects its submit button with a Cloudflare "Verifying Your Browser" check
 
 ### Use
 
-1. Open a Luma event and click **Register** / **Request to Join** so the form appears.
-2. Click the purple **✨ Autofill** button (bottom right).
+1. Open a Luma event.
+2. Click the purple **✨ Autofill** button (bottom right), or press **Alt + A**. It opens the registration form itself if it isn't open yet.
 3. Check the highlights. Green came from your profile, 🟨 yellow is an AI draft to check, and 🟥 red is required but still empty.
 4. Click Luma's submit button yourself.
 

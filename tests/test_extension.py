@@ -98,8 +98,42 @@ def test_autofill_button_fills_form_without_submitting(page):
     assert "host approval" in page.inner_text("#luma-autofill-panel")
 
 
-def test_asks_to_open_form_first(page):
+def test_opens_the_form_itself(page):
+    inject(page)
+    page.click("#luma-autofill-btn")  # form not open yet: Autofill clicks "Request to Join" first
+    page.wait_for_selector("#luma-autofill-panel:has-text('Filled')")
+    assert page.locator("#modal").is_visible()
+    assert page.input_value("#email") == "ada@example.com"
+    assert page.evaluate("window.submitted") is None
+
+
+def test_open_form_survives_click_on_autofill(page):
+    # Luma-style dismissal: any pointer press or focus outside the open form closes it.
+    page.evaluate("""() => {
+        const modal = document.getElementById('modal');
+        const dismiss = (e) => { if (modal.style.display !== 'none' && !modal.contains(e.target)) modal.style.display = 'none'; };
+        document.addEventListener('pointerdown', dismiss);
+        document.addEventListener('mousedown', dismiss);
+        document.addEventListener('focusin', dismiss);
+    }""")
+    inject(page)
+    page.click("#cta")
+    page.click("#luma-autofill-btn")
+    page.wait_for_selector("#luma-autofill-panel:has-text('Filled')")
+    assert page.locator("#modal").is_visible()
+    assert page.input_value("#email") == "ada@example.com"
+
+
+def test_alt_a_shortcut(page):
+    inject(page)
+    page.keyboard.press("Alt+a")
+    page.wait_for_selector("#luma-autofill-panel:has-text('Filled')")
+    assert page.input_value("#email") == "ada@example.com"
+
+
+def test_no_form_on_page(page):
+    page.evaluate("document.getElementById('cta').remove(); document.getElementById('modal').remove()")
     inject(page)
     page.click("#luma-autofill-btn")
     page.wait_for_selector("#luma-autofill-panel")
-    assert "Request to Join" in page.inner_text("#luma-autofill-panel")
+    assert "No form found" in page.inner_text("#luma-autofill-panel")

@@ -234,12 +234,29 @@
       document.body.appendChild(p);
     }
     p.innerHTML = '<span class="close" title="Close">✕</span>' + html;
-    p.querySelector(".close").onclick = () => p.remove();
   }
   const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
   function draftViaBackground(payload) {
     return new Promise((resolve) => chrome.runtime.sendMessage({ type: "draft", payload }, resolve));
+  }
+
+  // ---------- opening the form ----------
+  const CTA_RE = /^(register|request to join|rsvp|join event|join waitlist|apply|sign up|reserve( a)? spot|attend)\b/i;
+
+  const dialogOpen = () =>
+    [...document.querySelectorAll('[role="dialog"], dialog[open], .lux-modal, .modal')].some(visible);
+
+  async function openForm() {
+    if (dialogOpen()) return true;
+    const cta = [...document.querySelectorAll("button, a[role=button]")]
+      .filter((b) => visible(b) && !b.closest("#luma-autofill-panel") && b.id !== "luma-autofill-btn")
+      .find((b) => CTA_RE.test(clean(b.innerText)) && !/one[- ]click/i.test(b.innerText));
+    if (!cta) return false;
+    cta.click();
+    for (let i = 0; i < 30 && !dialogOpen(); i++) await sleep(200);
+    await sleep(400); // let the form render its questions
+    return dialogOpen();
   }
 
   // ---------- main ----------
@@ -249,6 +266,7 @@
       panel("No profile saved yet. Click the extension icon (puzzle piece → Luma Autofill) to add your details.");
       return;
     }
+    await openForm();
     const fields = extractFields();
     if (!fields.length) {
       panel("No form found. Click Luma's <b>Register</b> / <b>Request to Join</b> button first, then click Autofill.");
@@ -316,14 +334,35 @@
   const btn = document.createElement("button");
   btn.id = "luma-autofill-btn";
   btn.textContent = "✨ Autofill";
-  btn.onclick = async () => {
+  btn.title = "Fill this Luma form (shortcut: Alt+A)";
+  let busy = false;
+  async function trigger() {
+    if (busy) return;
+    busy = true;
     btn.disabled = true;
     btn.textContent = "Filling…";
     try { await run(); }
     catch (e) { panel(`Something went wrong: ${esc(String(e.message || e))}`); }
-    finally { btn.disabled = false; btn.textContent = "✨ Autofill"; }
-  };
+    finally { busy = false; btn.disabled = false; btn.textContent = "✨ Autofill"; }
+  }
   document.body.appendChild(btn);
 
-  window.__lumaAutofill = { run, extractFields, classify, profileValue }; // for tests
+  // Luma closes its form on any pointer press or focus outside it. Swallow those events
+  // for our own button/panel (window capture runs before the page's listeners) and keep
+  // focus where it is, so the open form survives a click on Autofill.
+  const ours = (t) => t instanceof Node && (btn.contains(t) || document.getElementById("luma-autofill-panel")?.contains(t));
+  for (const type of ["pointerdown", "mousedown", "touchstart", "pointerup", "mouseup", "click", "focusin"]) {
+    window.addEventListener(type, (e) => {
+      if (!ours(e.target)) return;
+      e.stopImmediatePropagation();
+      if (type === "pointerdown" || type === "mousedown") e.preventDefault(); // don't move focus
+      if (type === "click" && btn.contains(e.target)) trigger();
+      if (type === "click" && e.target.classList?.contains("close")) e.target.closest("#luma-autofill-panel")?.remove();
+    }, true);
+  }
+  window.addEventListener("keydown", (e) => {
+    if (e.altKey && !e.ctrlKey && !e.metaKey && e.key.toLowerCase() === "a") { e.preventDefault(); trigger(); }
+  }, true);
+
+  window.__lumaAutofill = { run, trigger, extractFields, classify, profileValue }; // for tests
 })();
