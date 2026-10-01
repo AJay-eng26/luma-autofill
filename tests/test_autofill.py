@@ -220,3 +220,17 @@ def test_cta_click_through_transparent_overlay(page):
     code = run_registration(page, PROFILE, FakeDrafter(), dry_run=True, ask=scripted())
     assert code == EXIT_OK
     assert page.locator("#modal").is_visible()
+
+
+def test_submit_hits_browser_verification(page):
+    from luma_autofill.cli import EXIT_HANDOFF
+
+    page.evaluate("""() => {
+        document.getElementById('submit').onclick = () => {
+            const v = document.createElement('div');
+            v.innerText = 'Verifying Your Browser. We are doing a quick check of your browser.';
+            document.body.appendChild(v);
+        };
+    }""")
+    code = run_registration(page, PROFILE, FakeDrafter(), dry_run=False, ask=scripted("s", "y", "submit"))
+    assert code == EXIT_HANDOFF

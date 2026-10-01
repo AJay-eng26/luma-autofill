@@ -18,6 +18,7 @@ class Status(str, Enum):
     CLOSED = "closed"
     PAID = "paid_ticket"
     OPEN = "open"
+    VERIFYING = "verifying_browser"
     UNKNOWN = "unknown"
 
 
@@ -28,6 +29,9 @@ STATUS_DESCRIPTIONS = {
     Status.CLOSED: "Registration is closed, sold out, or the event has ended.",
     Status.PAID: "This event requires a paid ticket — not handled automatically. Register manually.",
     Status.OPEN: "Registration is open.",
+    Status.VERIFYING: ("Luma is running its 'Verifying Your Browser' check. The tool has let go of Chrome "
+                       "and left it open: finish there (tick the checkbox if one appears). Your request is "
+                       "sent once the check passes."),
     Status.UNKNOWN: "Could not determine registration status — check the page.",
 }
 
@@ -69,7 +73,12 @@ def page_text(page: Page) -> str:
     return page.evaluate("() => document.body ? document.body.innerText : ''")
 
 
+VERIFYING_RE = re.compile(r"verifying your browser|verify you are human", re.I)
+
+
 def detect_status(text: str) -> Status:
+    if VERIFYING_RE.search(text):
+        return Status.VERIFYING
     for status, patterns in STATUS_PATTERNS:
         if any(re.search(p, text, re.I) for p in patterns):
             return status

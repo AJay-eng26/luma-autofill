@@ -21,7 +21,7 @@ from .review import print_summary, review_loop
 SIGNIN_URL = "https://luma.com/signin"
 MAX_STEPS = 4
 
-EXIT_OK, EXIT_ERROR, EXIT_ABORTED, EXIT_UNAVAILABLE = 0, 1, 2, 3
+EXIT_OK, EXIT_ERROR, EXIT_ABORTED, EXIT_UNAVAILABLE, EXIT_HANDOFF = 0, 1, 2, 3, 4
 DEBUG_DIR = Path("debug")
 
 
@@ -101,6 +101,8 @@ def report(status: Status, approval: bool) -> int:
     print(f"\nSTATUS: {status.value.upper()} — {msg}")
     if status in (Status.CLOSED, Status.PAID):
         return EXIT_UNAVAILABLE
+    if status is Status.VERIFYING:
+        return EXIT_HANDOFF
     return EXIT_OK
 
 
@@ -178,7 +180,7 @@ def run_registration(
             return EXIT_ERROR
         log(f"Clicking “{luma.cta_label(submit)}”…")
         before = luma.page_text(page)
-        submit.click()
+        click_button(page, submit)
         status = luma.wait_for_status(page, before, timeout_ms=10000)
         if status is not Status.UNKNOWN:
             return report(status, approval)
@@ -224,7 +226,8 @@ def cmd_fill(args: argparse.Namespace) -> int:
 
     drafter = None if args.no_ai else Drafter(model=args.model)
     exe, profile_dir = _browser_setup(args)
-    with sync_playwright() as p, browser.connected_browser(p, exe, profile_dir, args.headless) as ctx:
+    with sync_playwright() as p, browser.connected_browser(p, exe, profile_dir, args.headless) as session:
+        ctx = session.context
         # A fresh tab: the browser's own start tab can be replaced or closed on first run.
         page = ctx.new_page()
         try:
@@ -246,7 +249,11 @@ def cmd_fill(args: argparse.Namespace) -> int:
                 log(f"Browser step failed: {first_line}")
                 save_debug(page)
             code = EXIT_ERROR
-        if args.keep_open and not args.headless:
+        if code in (EXIT_HANDOFF, EXIT_ERROR) and not args.dry_run:
+            # Let the user finish (or check) in the real browser instead of closing it on them.
+            session.keep_open = True
+            log("Leaving Chrome open so you can finish there.")
+        elif args.keep_open and not args.headless:
             input("Press Enter to close the browser… ")
     return code
 

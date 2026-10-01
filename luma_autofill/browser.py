@@ -18,6 +18,7 @@ import subprocess
 import sys
 import time
 from contextlib import contextmanager
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterator
 
@@ -76,18 +77,29 @@ def open_plain(exe: str, profile_dir: Path, url: str) -> subprocess.Popen:
     return subprocess.Popen([exe, *_base_args(profile_dir), "--new-window", url])
 
 
+@dataclass
+class Session:
+    context: BrowserContext
+    # Set True to leave the browser running for the user when the tool exits.
+    keep_open: bool = False
+
+
 @contextmanager
 def connected_browser(
     p: Playwright, exe: str | None, profile_dir: Path, headless: bool
-) -> Iterator[BrowserContext]:
-    """Yield a context for ``profile_dir``, driving a real browser over CDP when possible."""
+) -> Iterator[Session]:
+    """Yield a Session for ``profile_dir``, driving a real browser over CDP when possible."""
     profile_dir = profile_dir.resolve()
     profile_dir.mkdir(parents=True, exist_ok=True)
     if exe is None:
         ctx = p.chromium.launch_persistent_context(str(profile_dir), headless=headless, no_viewport=True)
+        session = Session(ctx)
         try:
-            yield ctx
+            yield session
         finally:
+            if session.keep_open and not headless:
+                # Bundled Chromium dies with this process, so wait for the user instead.
+                input("Finish in the browser window, then press Enter here to close it… ")
             ctx.close()
         return
 
@@ -116,15 +128,25 @@ def connected_browser(
                 )
             time.sleep(0.25)
         browser = p.chromium.connect_over_cdp(endpoint)
-        yield browser.contexts[0] if browser.contexts else browser.new_context()
+        session = Session(browser.contexts[0] if browser.contexts else browser.new_context())
+        yield session
+        if session.keep_open and not headless:
+            # Disconnect and leave the browser running as a plain, un-automated window.
+            browser.close()
+            return
     finally:
-        if browser is not None:
+        if browser is not None and proc.poll() is None and not _detached(browser):
             try:
                 # Graceful shutdown so cookies (your Luma session) are flushed to disk.
                 browser.new_browser_cdp_session().send("Browser.close")
             except Exception:  # noqa: BLE001 - already closed by the user
                 pass
-        try:
-            proc.wait(timeout=10)
-        except subprocess.TimeoutExpired:
-            proc.terminate()
+        if browser is None or not _detached(browser):
+            try:
+                proc.wait(timeout=10)
+            except subprocess.TimeoutExpired:
+                proc.terminate()
+
+
+def _detached(browser) -> bool:
+    return not browser.is_connected()

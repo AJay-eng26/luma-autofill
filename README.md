@@ -93,7 +93,7 @@ Example summary:
 
 ### Exit codes
 
-`0` done or dry run · `1` error · `2` you quit without submitting · `3` registration closed or requires a paid ticket.
+`0` done or dry run · `1` error · `2` you quit without submitting · `3` registration closed or requires a paid ticket · `4` Luma started its "Verifying Your Browser" check after submit; the tool disconnected and left the browser open for you to finish.
 
 ## How it works
 
