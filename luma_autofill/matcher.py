@@ -61,20 +61,27 @@ def classify(f: FormField) -> str | None:
     return None
 
 
+def _same(a: str, b: str) -> bool:
+    norm = lambda t: re.sub(r"[^a-z0-9]+", "", t.lower())  # noqa: E731
+    return norm(a) == norm(b)
+
+
 def match_fields(fields: list[FormField], profile: Profile) -> list[FormField]:
     """Fill ``values``/``source`` from the profile. Returns the fields still unanswered."""
     unanswered: list[FormField] = []
     for f in fields:
-        if f.current and f.kind != CHECKBOX:
-            # Luma prefills name/email for logged-in users; keep what's there.
-            f.values, f.source = list(f.current), "prefilled"
-            continue
         key = classify(f)
         value = _value_for(key, f.label, profile) if key else ""
         if value and f.kind in CHOICE_KINDS and f.options:
             value = best_option(f.options, value) or ""
+        prefilled = list(f.current) if f.current and f.kind != CHECKBOX else []
         if value:
+            # profile.json wins over answers Luma remembered from earlier registrations.
             f.values, f.source = [value], "profile"
+            if prefilled and not _same(prefilled[0], value):
+                f.note = f"replaced Luma's saved answer: {prefilled[0]}"
+        elif prefilled:
+            f.values, f.source = prefilled, "prefilled"
         else:
             unanswered.append(f)
     return unanswered

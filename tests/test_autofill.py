@@ -54,11 +54,17 @@ def test_match_formats_handles():
     assert [f.values[0] for f in fields] == ["@ada", "https://x.com/ada", "https://linkedin.com/in/ada"]
 
 
-def test_prefilled_values_are_kept():
-    f = text_field("Name")
-    f.current = ["Someone Else"]
-    match_fields([f], PROFILE)
-    assert f.values == ["Someone Else"] and f.source == "prefilled"
+def test_profile_overrides_luma_saved_answers():
+    company = text_field("What company do you work for? - (optional)")
+    company.current = ["Old Co"]
+    x = text_field("What is your X (Twitter) handle?")
+    x.current = ["ada"]
+    invited = text_field("Who invited you?")
+    invited.current = ["Grace"]
+    assert match_fields([company, x, invited], PROFILE) == []
+    assert company.values == ["Analytical Engines"] and "Old Co" in company.note
+    assert x.values == ["@ada"] and x.note == ""  # same handle, no warning
+    assert invited.values == ["Grace"] and invited.source == "prefilled"
 
 
 @pytest.mark.parametrize(
