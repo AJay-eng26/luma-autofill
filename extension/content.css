@@ -12,9 +12,9 @@
 }
 #luma-autofill-panel b { color: #fde68a; }
 #luma-autofill-panel .close { float: right; cursor: pointer; margin-left: 8px; opacity: .7; }
-.luma-autofill-profile { outline: 2px solid #22c55e !important; outline-offset: 2px; }
-.luma-autofill-ai { outline: 3px solid #facc15 !important; outline-offset: 2px; }
-.luma-autofill-missing { outline: 3px solid #ef4444 !important; outline-offset: 2px; }
+[data-luma-autofill="profile"] { outline: 2px solid #22c55e !important; outline-offset: 2px; }
+[data-luma-autofill="ai"] { outline: 3px solid #facc15 !important; outline-offset: 2px; }
+[data-luma-autofill="missing"] { outline: 3px solid #ef4444 !important; outline-offset: 2px; }
 .luma-autofill-note {
   display: block; margin: 4px 0 8px; padding: 6px 8px; border-radius: 6px;
   background: #fef9c3; color: #713f12; font: 12px/1.4 system-ui, sans-serif;

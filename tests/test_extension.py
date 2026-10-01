@@ -93,7 +93,7 @@ def test_autofill_button_fills_form_without_submitting(page):
     assert "Email" not in asked and "Company" not in asked
     assert asked["Which partners interest you?"]["options"] == ["Alpha Ventures", "Beta Capital"]
     # AI answers are highlighted; nothing was submitted.
-    assert page.locator(".luma-autofill-ai").count() >= 4
+    assert page.locator("[data-luma-autofill=ai]").count() >= 4
     assert page.evaluate("window.submitted") is None
     assert "host approval" in page.inner_text("#luma-autofill-panel")
 
@@ -137,3 +137,51 @@ def test_no_form_on_page(page):
     page.click("#luma-autofill-btn")
     page.wait_for_selector("#luma-autofill-panel")
     assert "No form found" in page.inner_text("#luma-autofill-panel")
+
+
+REACT_FIXTURE = (Path(__file__).parent / "fixtures" / "react_event.html").as_uri()
+
+REACT_STUB = CHROME_STUB.replace(
+    '"Which partners interest you?": ["Beta Capital"],',
+    '"Which partners interest you?": ["Beta Capital"],\n        "Telegram Contact": ["@ada_tg"],\n        "What\'s your familiarity with Calisthenics?": ["Intermediate"],',
+)
+
+
+@pytest.fixture
+def react_page():
+    with sync_playwright() as p:
+        browser = p.chromium.launch(executable_path=os.environ.get("PLAYWRIGHT_CHROMIUM") or None)
+        pg = browser.new_page()
+        pg.add_init_script(REACT_STUB)
+        pg.goto(REACT_FIXTURE)
+        yield pg
+        browser.close()
+
+
+def test_values_stick_in_react_controlled_form(react_page):
+    page = react_page
+    inject(page)
+    page.click("#luma-autofill-btn")  # opens the React modal itself, then fills
+    page.wait_for_selector("#luma-autofill-panel:has-text('Filled')")
+    page.wait_for_timeout(300)
+    page.click("#submit")  # the test submits, to read React's own state
+    state = page.evaluate("window.submitted")
+    assert state["name"] == "Ada Lovelace"
+    assert state["company"] == "Analytical Engines"
+    assert state["telegram"] == "@ada_tg"
+    assert state["x"] == "@ada"
+    assert state["fam"] == "Intermediate"
+    # The covered inline copy of the form behind the modal stays untouched.
+    assert page.input_value("#behind-name") == "" and page.input_value("#behind-company") == ""
+
+
+def test_reports_fields_that_did_not_stick(react_page):
+    page = react_page
+    page.evaluate("chrome.storage.local.get = async () => ({ profile: { name: 'Ada Lovelace', email: 'a@x.com', linkedin: 'linkedin.com/in/ada' } })")
+    inject(page)
+    page.click("#luma-autofill-btn")
+    page.wait_for_selector("#luma-autofill-panel:has-text('Filled')")
+    text = page.inner_text("#luma-autofill-panel")
+    assert "couldn't be filled automatically" in text
+    assert page.locator(".panel [data-luma-autofill=missing]").count() >= 1
+    assert "Please enter: https://linkedin.com/in/ada" in page.inner_text(".panel")

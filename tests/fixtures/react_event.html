@@ -1,0 +1,69 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>SPARKY: GAME ON! · Luma</title>
+<script src="vendor/react.production.min.js"></script>
+<script src="vendor/react-dom.production.min.js"></script>
+<style>.overlay{position:fixed;inset:0;background:rgba(0,0,0,.6)} .panel{position:relative;margin:20px auto;width:520px;background:#222;color:#eee;padding:16px}
+.field{margin:10px 0} input{width:100%} .menu{background:#333}</style>
+</head>
+<body>
+<main><h1>SPARKY: GAME ON!</h1>
+<div class="inline-registration">
+  <div class="field"><div class="label">Name *</div><input type="text" id="behind-name"></div>
+  <div class="field"><div class="label">Company/Project *</div><input type="text" id="behind-company"></div>
+  <div class="field"><div class="label">What is your X (Twitter) handle?</div><input type="text" id="behind-x"></div>
+</div><p>Approval Required. Your registration is subject to host approval.</p><div id="root"></div></main>
+<script>
+// A React mock of Luma's registration modal: controlled inputs, a custom dropdown,
+// and dismissal on any pointer press outside the panel.
+const h = React.createElement;
+const { useState, useEffect, useRef } = React;
+
+function Field({ label, value, onChange }) {
+  return h("div", { className: "field" },
+    h("div", { className: "label" }, label),
+    h("input", { type: "text", value, onChange: (e) => onChange(e.target.value) }));
+}
+
+function Dropdown({ label, options, value, onChange }) {
+  const [open, setOpen] = useState(false);
+  return h("div", { className: "field" },
+    h("div", { className: "label" }, label),
+    h("button", { type: "button", "aria-haspopup": "listbox", "aria-expanded": open, onClick: () => setOpen(!open) }, value || "Select an option"),
+    open && h("div", { role: "listbox", className: "menu" },
+      options.map((o) => h("div", { key: o, role: "option", onClick: () => { onChange(o); setOpen(false); } }, o))));
+}
+
+function Modal({ onClose }) {
+  const [s, set] = useState({ name: "", company: "", telegram: "", x: "0x_A_jay", fam: "" });
+  const panel = useRef(null);
+  const upd = (k) => (v) => set((p) => ({ ...p, [k]: v }));
+  useEffect(() => {
+    const away = (e) => { if (panel.current && !panel.current.contains(e.target)) onClose(); };
+    document.addEventListener("pointerdown", away);
+    return () => document.removeEventListener("pointerdown", away);
+  }, []);
+  return h("div", { className: "overlay" },
+    h("div", { className: "panel", ref: panel },
+      h("h2", null, "Your Info"),
+      h(Field, { label: "Name *", value: s.name, onChange: upd("name") }),
+      h(Field, { label: "Company/Project *", value: s.company, onChange: upd("company") }),
+      h(Field, { label: "Telegram Contact *", value: s.telegram, onChange: upd("telegram") }),
+      h(Field, { label: "What is your X (Twitter) handle?", value: s.x, onChange: upd("x") }),
+      // A field that ignores programmatic input: its value never changes.
+      h(Field, { label: "LinkedIn profile", value: "", onChange: () => {} }),
+      h(Dropdown, { label: "What's your familiarity with Calisthenics?", options: ["Beginner", "Intermediate", "Advanced"], value: s.fam, onChange: upd("fam") }),
+      h("button", { type: "button", id: "submit", onClick: () => { window.submitted = s; } }, "Request to Join")));
+}
+
+function App() {
+  const [open, setOpen] = useState(false);
+  window.__state = { open };
+  return h("div", null,
+    h("button", { type: "button", id: "cta", onClick: () => setOpen(true) }, "Request to Join"),
+    open && h(Modal, { onClose: () => setOpen(false) }));
+}
+ReactDOM.createRoot(document.getElementById("root")).render(h(App));
+</script>
+</body>
+</html>
