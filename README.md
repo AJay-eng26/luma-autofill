@@ -9,7 +9,32 @@ A Python CLI agent that fills Luma (lu.ma / luma.com) event registration forms f
 - Detects **approval-required** events and reports the final status: registered, pending approval, waitlisted, closed, or paid ticket.
 - `--dry-run` fills the form and shows the summary, but never submits.
 
-## Setup (about 5 min)
+## Recommended: the browser extension
+
+Luma protects its submit button with a Cloudflare "Verifying Your Browser" check that fails whenever an automation tool is attached to the browser. The `extension/` folder fixes this by running **inside your own Brave or Chrome** with nothing attached. It fills the form, and **you click submit yourself**, so Cloudflare sees a normal visitor.
+
+### Install (about 3 min)
+
+1. Download this repository (Code → Download ZIP) and unzip it.
+2. In Brave, open `brave://extensions` (in Chrome, `chrome://extensions`).
+3. Turn on **Developer mode** (top right).
+4. Click **Load unpacked** and choose the `extension` folder.
+5. Click the **puzzle-piece icon → Luma Autofill**. The settings page opens. Click **Import profile.json** or type your details, paste your Anthropic API key, then **Save**.
+
+### Use
+
+1. Open a Luma event and click **Register** / **Request to Join** so the form appears.
+2. Click the purple **✨ Autofill** button (bottom right).
+3. Check the highlights. Green came from your profile, 🟨 yellow is an AI draft to check, and 🟥 red is required but still empty.
+4. Click Luma's submit button yourself.
+
+Your details and API key are kept in the browser's local extension storage. Claude is called from the extension's background worker, never from the Luma page.
+
+## Command-line tool (Playwright)
+
+The CLI below does the same filling from a terminal. It works for filling and reviewing, but Luma's Cloudflare check can block the final submit while Playwright is attached. When that happens, the tool disconnects and leaves the browser open for you (exit code 4).
+
+### Setup (about 5 min)
 
 Requires Python 3.10+.
 
@@ -47,7 +72,7 @@ playwright install chromium
 
    Why not let Playwright launch the browser? Luma's "Verifying Your Browser" check stalls on automation-launched browsers. So the tool starts your real **Chrome**, or **Edge** or **Brave** if Chrome isn't installed, as a normal process. For `fill`, it then connects to that browser over a local DevTools port. To pick a browser, put `--browser chrome|msedge|brave|chromium` or `--browser-path <exe>` before the subcommand, e.g. `python -m luma_autofill --browser msedge login`.
 
-## Usage
+### Usage
 
 ```bash
 # Preview: fill the form, print the summary, never submit
@@ -95,7 +120,7 @@ Example summary:
 
 `0` done or dry run · `1` error · `2` you quit without submitting · `3` registration closed or requires a paid ticket · `4` Luma started its "Verifying Your Browser" check after submit; the tool disconnected and left the browser open for you to finish.
 
-## How it works
+### How it works
 
 1. **Open** the event page and read the status. If there's no register button, it reports whether you're already registered, pending, waitlisted, or the event is closed.
 2. **Approval check** — text like "Approval Required" or a "Request to Join" button marks the event as approval-based. The status report says so.
