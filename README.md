@@ -37,15 +37,15 @@ playwright install chromium
 
    Skip this and pass `--no-ai` if you'd rather type those answers yourself.
 
-3. **Log in to Luma once** — a browser window opens; sign in, then press Enter in the terminal:
+3. **Log in to Luma once** — your installed Chrome opens on the Luma sign-in page with nothing attached to it. Sign in, then **close that browser window** to save the session:
 
    ```bash
    python -m luma_autofill login
    ```
 
-   The session is saved in `./browser_profile/` (gitignored) and reused on every run.
+   The session is saved in `./browser_profile/<browser>/` (gitignored) and reused on every run.
 
-   The tool drives your installed **Google Chrome**, or **Microsoft Edge** if Chrome isn't installed, because Luma's "Verifying Your Browser" check can stall on Playwright's bundled Chromium. Pick one explicitly with `--browser chrome|msedge|chromium` before the subcommand, e.g. `python -m luma_autofill --browser msedge login`.
+   Why not let Playwright launch the browser? Luma's "Verifying Your Browser" check stalls on automation-launched browsers. So the tool starts your real **Chrome**, or **Edge** or **Brave** if Chrome isn't installed, as a normal process. For `fill`, it then connects to that browser over a local DevTools port. To pick a browser, put `--browser chrome|msedge|brave|chromium` or `--browser-path <exe>` before the subcommand, e.g. `python -m luma_autofill --browser msedge login`.
 
 ## Usage
 
@@ -87,7 +87,8 @@ Example summary:
 | `--profile` | `profile.json` | Path to your details. |
 | `--headless` | off | Run without a browser window. |
 | `--keep-open` | off | Leave the browser open at the end until you press Enter. |
-| `--browser` | `auto` | `chrome`, `msedge`, or `chromium`; `auto` tries them in that order (put before the subcommand). |
+| `--browser` | `auto` | `chrome`, `msedge`, `brave`, or `chromium` (bundled); `auto` tries them in that order (put before the subcommand). |
+| `--browser-path` | — | Use a specific Chromium-based browser executable (put before the subcommand). |
 | `--browser-profile` | `./browser_profile` | Folder for saved browser sessions (put before the subcommand). |
 
 ### Exit codes

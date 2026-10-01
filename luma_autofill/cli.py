@@ -7,9 +7,9 @@ import sys
 from pathlib import Path
 from typing import Callable
 
-from playwright.sync_api import BrowserContext, Error as PlaywrightError, Page, Playwright, sync_playwright
+from playwright.sync_api import Page, sync_playwright
 
-from . import luma
+from . import browser, luma
 from .drafter import DEFAULT_MODEL, Drafter
 from .form import FormField, extract_fields, fill_field
 from .luma import STATUS_DESCRIPTIONS, Status
@@ -157,44 +157,28 @@ def run_registration(
     return report(luma.detect_status(luma.page_text(page)), approval)
 
 
-BROWSER_CHOICES = ("auto", "chrome", "msedge", "chromium")
-
-
-def launch_browser(p: Playwright, args: argparse.Namespace, headless: bool) -> BrowserContext:
-    """Open a persistent profile in a real Chrome/Edge install when available.
-
-    Luma's bot check can stall on Playwright's bundled Chromium, so ``auto`` tries the
-    user's installed Chrome, then Edge, and only then falls back to bundled Chromium.
-    Each browser gets its own profile folder because their profile formats differ.
-    """
-    channels = ("chrome", "msedge", "chromium") if args.browser == "auto" else (args.browser,)
-    last_error: Exception | None = None
-    for channel in channels:
-        try:
-            ctx = p.chromium.launch_persistent_context(
-                str(Path(args.browser_profile) / channel),
-                channel=None if channel == "chromium" else channel,
-                headless=headless,
-                ignore_default_args=["--enable-automation"],
-                args=["--disable-blink-features=AutomationControlled"],
-                no_viewport=True,
-            )
-        except PlaywrightError as exc:
-            last_error = exc
-            continue
-        log(f"Using browser: {channel}")
-        return ctx
-    raise SystemExit(f"Could not start a browser ({', '.join(channels)}): {last_error}")
+def _browser_setup(args: argparse.Namespace) -> tuple[str | None, Path]:
+    found = browser.find_browser(args.browser, args.browser_path)
+    name = found[0] if found else "chromium"
+    log(f"Using browser: {name}")
+    # Each browser keeps its own saved session; profile formats differ between them.
+    return (found[1] if found else None), Path(args.browser_profile) / name
 
 
 def cmd_login(args: argparse.Namespace) -> int:
-    with sync_playwright() as p:
-        ctx = launch_browser(p, args, headless=False)
-        page = ctx.pages[0] if ctx.pages else ctx.new_page()
-        page.goto(SIGNIN_URL)
-        input("Sign in to Luma in the browser window, then press Enter here to save the session… ")
-        ctx.close()
-    log(f"Session saved to {args.browser_profile}")
+    exe, profile_dir = _browser_setup(args)
+    if exe is None:
+        # Bundled Chromium only; Luma's browser check may stall here.
+        with sync_playwright() as p, browser.connected_browser(p, None, profile_dir, headless=False) as ctx:
+            page = ctx.pages[0] if ctx.pages else ctx.new_page()
+            page.goto(SIGNIN_URL)
+            input("Sign in to Luma in the browser window, then press Enter here to save the session… ")
+    else:
+        proc = browser.open_plain(exe, profile_dir, SIGNIN_URL)
+        print("Sign in to Luma in the browser window that just opened.")
+        print("When you can see your Luma home page, CLOSE that browser window to save the session.")
+        proc.wait()
+    log(f"Session saved to {profile_dir}")
     return EXIT_OK
 
 
@@ -207,8 +191,8 @@ def cmd_fill(args: argparse.Namespace) -> int:
         return EXIT_ERROR
 
     drafter = None if args.no_ai else Drafter(model=args.model)
-    with sync_playwright() as p:
-        ctx = launch_browser(p, args, headless=args.headless)
+    exe, profile_dir = _browser_setup(args)
+    with sync_playwright() as p, browser.connected_browser(p, exe, profile_dir, args.headless) as ctx:
         page = ctx.pages[0] if ctx.pages else ctx.new_page()
         try:
             log(f"Opening {url}")
@@ -223,7 +207,6 @@ def cmd_fill(args: argparse.Namespace) -> int:
             code = EXIT_ABORTED
         if args.keep_open and not args.headless:
             input("Press Enter to close the browser… ")
-        ctx.close()
     return code
 
 
@@ -231,8 +214,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="luma_autofill", description="Fill Luma event registration forms.")
     parser.add_argument("--browser-profile", default="browser_profile",
                         help="Folder for the saved browser sessions (default: ./browser_profile)")
-    parser.add_argument("--browser", choices=BROWSER_CHOICES, default="auto",
-                        help="Browser to drive: auto tries installed Chrome, then Edge, then bundled Chromium.")
+    parser.add_argument("--browser", choices=browser.BROWSER_CHOICES, default="auto",
+                        help="auto tries installed Chrome, then Edge, then Brave, then bundled Chromium.")
+    parser.add_argument("--browser-path", help="Path to a Chromium-based browser executable to use instead.")
     sub = parser.add_subparsers(dest="command", required=True)
 
     sub.add_parser("login", help="Open a browser to sign in to Luma once; the session is reused.")

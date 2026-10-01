@@ -189,3 +189,14 @@ def test_drafter_request_and_parsing():
     assert body["fallbacks"] == "default"
     assert why.values == ["Building agent tooling."] and why.flagged and "confidence: medium" in why.note
     assert heard.values == ["Newsletter"] and heard.source == "ai"
+
+
+def test_find_browser_choices(tmp_path):
+    from luma_autofill import browser
+
+    assert browser.find_browser("chromium") is None
+    exe = tmp_path / "chrome"
+    exe.write_text("")
+    assert browser.find_browser("auto", str(exe)) == ("custom", str(exe))
+    with pytest.raises(SystemExit):
+        browser.find_browser("auto", str(tmp_path / "missing"))
