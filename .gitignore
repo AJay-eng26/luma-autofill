@@ -4,3 +4,4 @@ __pycache__/
 profile.json
 browser_profile/
 .pytest_cache/
+debug/

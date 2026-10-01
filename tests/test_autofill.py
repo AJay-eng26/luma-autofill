@@ -200,3 +200,17 @@ def test_find_browser_choices(tmp_path):
     assert browser.find_browser("auto", str(exe)) == ("custom", str(exe))
     with pytest.raises(SystemExit):
         browser.find_browser("auto", str(tmp_path / "missing"))
+
+
+def test_cta_click_through_transparent_overlay(page):
+    # Luma can layer a transparent "lux-overlay glass" over the page that eats mouse clicks.
+    page.evaluate("""() => {
+        const o = document.createElement('div');
+        o.className = 'lux-overlay glass';
+        o.style.cssText = 'position:fixed;inset:0;background:transparent;z-index:5';
+        document.body.appendChild(o);
+        document.getElementById('modal').style.cssText += ';position:relative;z-index:10';
+    }""")
+    code = run_registration(page, PROFILE, FakeDrafter(), dry_run=True, ask=scripted())
+    assert code == EXIT_OK
+    assert page.locator("#modal").is_visible()

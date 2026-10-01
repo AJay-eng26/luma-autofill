@@ -8,7 +8,7 @@ import time
 from pathlib import Path
 from typing import Callable
 
-from playwright.sync_api import Page, sync_playwright
+from playwright.sync_api import Error as PlaywrightError, Locator, Page, sync_playwright
 
 from . import browser, luma
 from .drafter import DEFAULT_MODEL, Drafter
@@ -22,10 +22,39 @@ SIGNIN_URL = "https://luma.com/signin"
 MAX_STEPS = 4
 
 EXIT_OK, EXIT_ERROR, EXIT_ABORTED, EXIT_UNAVAILABLE = 0, 1, 2, 3
+DEBUG_DIR = Path("debug")
 
 
 def log(msg: str) -> None:
     print(f"› {msg}", flush=True)
+
+
+def click_button(page: Page, button: Locator) -> None:
+    """Click, falling back to a DOM click when an overlay intercepts the pointer.
+
+    Luma sometimes layers a transparent overlay over the page, which makes Playwright's
+    real mouse click retry until it times out.
+    """
+    try:
+        button.click(timeout=5000)
+    except PlaywrightError:
+        if extract_fields(page):
+            return  # The registration form is already open on top of the button.
+        log("Normal click was blocked by an overlay; clicking the button directly.")
+        button.evaluate("el => el.click()")
+
+
+def save_debug(page: Page | None) -> None:
+    """Save a screenshot and the page HTML so a failure can be diagnosed later."""
+    if page is None or page.is_closed():
+        return
+    try:
+        DEBUG_DIR.mkdir(exist_ok=True)
+        page.screenshot(path=str(DEBUG_DIR / "last_error.png"), full_page=True)
+        (DEBUG_DIR / "last_error.html").write_text(page.content(), encoding="utf-8")
+        log(f"Saved a screenshot of the page to {DEBUG_DIR / 'last_error.png'}")
+    except Exception:  # noqa: BLE001 - debugging aid only
+        pass
 
 
 def wait_for_fields(page: Page, timeout_ms: int = 10000) -> list[FormField]:
@@ -113,9 +142,9 @@ def run_registration(
                 log("Aborted. Nothing was submitted.")
                 return EXIT_ABORTED
             before = luma.page_text(page)
-            cta.click()
+            click_button(page, cta)
             return report(luma.wait_for_status(page, before), approval)
-        cta.click()
+        click_button(page, cta)
 
     seen_labels: set[tuple[str, ...]] = set()
     for step in range(1, MAX_STEPS + 1):
@@ -196,7 +225,8 @@ def cmd_fill(args: argparse.Namespace) -> int:
     drafter = None if args.no_ai else Drafter(model=args.model)
     exe, profile_dir = _browser_setup(args)
     with sync_playwright() as p, browser.connected_browser(p, exe, profile_dir, args.headless) as ctx:
-        page = ctx.pages[0] if ctx.pages else ctx.new_page()
+        # A fresh tab: the browser's own start tab can be replaced or closed on first run.
+        page = ctx.new_page()
         try:
             log(f"Opening {url}")
             page.goto(url, wait_until="domcontentloaded")
@@ -208,6 +238,14 @@ def cmd_fill(args: argparse.Namespace) -> int:
         except KeyboardInterrupt:
             log("Interrupted. Nothing further was submitted.")
             code = EXIT_ABORTED
+        except PlaywrightError as exc:
+            first_line = str(exc).strip().splitlines()[0] if str(exc).strip() else exc.__class__.__name__
+            if page.is_closed():
+                log("The browser tab was closed before the tool finished. Nothing was submitted by the tool.")
+            else:
+                log(f"Browser step failed: {first_line}")
+                save_debug(page)
+            code = EXIT_ERROR
         if args.keep_open and not args.headless:
             input("Press Enter to close the browser… ")
     return code
