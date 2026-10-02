@@ -5,6 +5,10 @@
 (() => {
   if (window.__lumaAutofillLoaded) return;
   window.__lumaAutofillLoaded = true;
+  // Content scripts of different installed copies can't see each other's variables,
+  // so also check the shared DOM and replace any button left by an older copy.
+  document.getElementById("luma-autofill-btn")?.remove();
+  document.getElementById("luma-autofill-panel")?.remove();
 
   const MAX_SIMPLE_LABEL = 60;
   const RULES = [
@@ -291,7 +295,9 @@
       p.id = "luma-autofill-panel";
       document.body.appendChild(p);
     }
-    p.innerHTML = '<span class="close" title="Close">✕</span>' + html;
+    const version = (() => { try { return chrome.runtime.getManifest().version; } catch { return "?"; } })();
+    p.innerHTML = '<span class="close" title="Close">✕</span>' + html +
+      `<div style="margin-top:8px;font-size:11px;opacity:.6">Luma Autofill v${version}</div>`;
   }
   const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
