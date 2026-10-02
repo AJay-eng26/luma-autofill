@@ -1,5 +1,8 @@
-   __pycache__/
-   .venv/
-   .env
-   profile.json
-   browser_profile/
+__pycache__/
+.venv/
+.env
+profile.json
+browser_profile/
+.pytest_cache/
+debug/
+dist/

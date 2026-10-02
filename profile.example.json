@@ -1,0 +1,12 @@
+{
+  "name": "Ada Lovelace",
+  "email": "ada@example.com",
+  "phone": "+1 415 555 0100",
+  "company": "Analytical Engines Inc.",
+  "linkedin": "https://www.linkedin.com/in/adalovelace",
+  "x_handle": "@ada",
+  "telegram": "@ada",
+  "role": "Founder & CEO",
+  "website": "https://example.com",
+  "about": "Founder building developer tools for AI agents. Previously ML engineer. Interested in meeting other founders and investors."
+}

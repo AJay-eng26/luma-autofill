@@ -1,0 +1,55 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>AI Founders Dinner · Luma</title></head>
+<body>
+<main>
+  <h1>AI Founders Dinner</h1>
+  <p>An intimate dinner for founders building with AI. Approval Required — the host reviews every request.</p>
+  <button id="cta" type="button">Request to Join</button>
+  <div id="result"></div>
+</main>
+
+<div role="dialog" id="modal" style="display:none">
+  <form id="form" onsubmit="return false">
+    <div class="field"><label for="name">Name</label><input id="name" value="Ada Lovelace" required></div>
+    <div class="field"><label for="email">Email</label><input id="email" type="email" required></div>
+    <div class="field"><div class="label">Phone Number</div><input type="tel" required></div>
+    <div class="field"><div class="label">Company *</div><input type="text"></div>
+    <div class="field"><div class="label">LinkedIn Profile URL</div><input type="text"></div>
+    <div class="field"><div class="label">X (Twitter) handle</div><input type="text"></div>
+    <div class="field"><div class="label">Job Title</div><input type="text"></div>
+    <div class="field">
+      <label for="heard">How did you hear about this event?</label>
+      <select id="heard"><option value="">Select…</option><option>Friend</option><option>X / Twitter</option><option>Newsletter</option></select>
+    </div>
+    <fieldset><legend>Are you a founder?</legend>
+      <label><input type="radio" name="founder" value="y"> Yes</label>
+      <label><input type="radio" name="founder" value="n"> No</label>
+    </fieldset>
+    <fieldset><legend>Topics you care about</legend>
+      <label><input type="checkbox" name="topics" value="a"> Agents</label>
+      <label><input type="checkbox" name="topics" value="b"> Infra</label>
+      <label><input type="checkbox" name="topics" value="c"> Fundraising</label>
+    </fieldset>
+    <div class="field"><div class="label">Why do you want to attend? Tell us what you're building. *</div><textarea></textarea></div>
+    <div class="field"><label><input type="checkbox" id="terms" required> I agree to share my info with the host</label></div>
+    <button type="button" id="submit">Request to Join</button>
+  </form>
+</div>
+
+<script>
+  document.getElementById('cta').onclick = () => { document.getElementById('modal').style.display = 'block'; };
+  document.getElementById('submit').onclick = () => {
+    const data = {};
+    document.querySelectorAll('#form input, #form textarea, #form select').forEach((el, i) => {
+      if (el.type === 'radio' || el.type === 'checkbox') { if (el.checked) data[(el.name || el.id) + ':' + el.value] = true; }
+      else data[i] = el.value;
+    });
+    window.submitted = data;
+    document.getElementById('modal').style.display = 'none';
+    document.getElementById('cta').remove();
+    document.getElementById('result').innerText = 'Pending Approval — the host will review your request.';
+  };
+</script>
+</body>
+</html>
