@@ -19,6 +19,7 @@ RULES: list[tuple[str, tuple[str, ...]]] = [
     ("linkedin", (r"linked\s*in",)),
     ("x", (r"twitter", r"\bx\s*(\(|handle|username|profile|account|url|link)", r"x\.com", r"^x$")),
     ("github", (r"github",)),
+    ("telegram", (r"telegram", r"\btg\b")),
     ("email", (r"e-?mail",)),
     ("phone", (r"phone", r"mobile", r"whats\s*app", r"cell")),
     ("first_name", (r"first\s*name", r"given\s*name")),
@@ -37,6 +38,9 @@ def _value_for(key: str, label: str, profile: Profile) -> str:
     wants_url = bool(re.search(r"url|link|profile|https?", label, re.I))
     if key == "x":
         return profile.x_url if wants_url else profile.x_at_handle
+    if key == "telegram":
+        handle = profile.telegram_at_handle
+        return f"https://t.me/{handle.lstrip('@')}" if handle and wants_url else handle
     if key == "linkedin":
         return profile.linkedin_url
     if key == "first_name":

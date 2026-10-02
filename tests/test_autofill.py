@@ -43,6 +43,8 @@ def text_field(label, input_type="text"):
         ("Why do you want to attend? Tell us about your company and what you're building.", "text", None),
         ("How did you hear about us?", "text", None),
         ("Name", "text", "name"),
+        ("Telegram Contact", "text", "telegram"),
+        ("TG handle", "text", "telegram"),
         ("Full name", "text", "name"),
         ("Name of your primary contact at OKX", "text", None),
         ("Who invited you? Name", "text", None),
@@ -238,3 +240,10 @@ def test_submit_hits_browser_verification(page):
     }""")
     code = run_registration(page, PROFILE, FakeDrafter(), dry_run=False, ask=scripted("s", "y", "submit"))
     assert code == EXIT_HANDOFF
+
+
+def test_telegram_formats():
+    p = Profile(name="Ada", email="a@x.com", telegram="https://t.me/ada_tg")
+    fields = [text_field("Telegram Contact"), text_field("Telegram profile link")]
+    assert match_fields(fields, p) == []
+    assert [f.values[0] for f in fields] == ["@ada_tg", "https://t.me/ada_tg"]

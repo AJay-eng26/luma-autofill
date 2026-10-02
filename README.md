@@ -52,7 +52,7 @@ playwright install chromium
    cp profile.example.json profile.json
    ```
 
-   `name` and `email` are required. Optional keys: `phone`, `company`, `linkedin`, `x_handle`, `role`, `website`, `github`, `location`, and `about` (a few sentences about you — the AI uses it to answer open questions). Any extra keys you add are also given to the AI as context. `profile.json` is gitignored.
+   `name` and `email` are required. Optional keys: `phone`, `company`, `linkedin`, `x_handle`, `telegram`, `role`, `website`, `github`, `location`, and `about` (a few sentences about you — the AI uses it to answer open questions). Any extra keys you add are also given to the AI as context. `profile.json` is gitignored.
 
 2. **Anthropic API key** — used only for questions your profile can't answer:
 

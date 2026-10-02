@@ -1,4 +1,4 @@
-const PROFILE_KEYS = ["name", "email", "phone", "company", "role", "linkedin", "x_handle", "website", "location", "about"];
+const PROFILE_KEYS = ["name", "email", "phone", "company", "role", "linkedin", "x_handle", "telegram", "website", "location", "about"];
 const $ = (id) => document.getElementById(id);
 
 async function load() {

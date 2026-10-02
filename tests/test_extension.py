@@ -193,3 +193,15 @@ def test_name_rule_only_matches_own_name(page):
     assert cls("Name") == "name"
     assert cls("Full name") == "name"
     assert cls("Name of your primary contact at OKX") is None
+
+
+def test_telegram_from_profile(page):
+    inject(page)
+    val = page.evaluate("""() => {
+        const A = window.__lumaAutofill;
+        const f = {kind: 'text', inputType: 'text', label: 'Telegram Contact'};
+        return [A.classify(f), A.profileValue('telegram', f.label, {telegram: 't.me/ada_tg'})];
+    }""")
+    assert val == ["telegram", "@ada_tg"]
+    x = page.evaluate("window.__lumaAutofill.profileValue('x', 'X handle', {x_handle: 'x.com/ada'})")
+    assert x == "@ada"

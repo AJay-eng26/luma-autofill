@@ -14,6 +14,7 @@ KNOWN_KEYS = (
     "company",
     "linkedin",
     "x_handle",
+    "telegram",
     "role",
     "website",
     "github",
@@ -34,6 +35,7 @@ class Profile:
     company: str = ""
     linkedin: str = ""
     x_handle: str = ""
+    telegram: str = ""
     role: str = ""
     website: str = ""
     github: str = ""
@@ -63,6 +65,15 @@ class Profile:
     def x_url(self) -> str:
         handle = self.x_at_handle.lstrip("@")
         return f"https://x.com/{handle}" if handle else ""
+
+    @property
+    def telegram_at_handle(self) -> str:
+        handle = self.telegram.strip()
+        for prefix in ("https://", "http://", "www.", "t.me/"):
+            if handle.lower().startswith(prefix):
+                handle = handle[len(prefix):]
+        handle = handle.strip("/").lstrip("@")
+        return f"@{handle}" if handle else ""
 
     @property
     def linkedin_url(self) -> str:

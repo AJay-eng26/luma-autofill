@@ -15,6 +15,7 @@
     ["linkedin", [/linked\s*in/i]],
     ["x", [/twitter/i, /\bx\s*(\(|handle|username|profile|account|url|link)/i, /x\.com/i, /^x$/i]],
     ["github", [/github/i]],
+    ["telegram", [/telegram/i, /\btg\b/i]],
     ["email", [/e-?mail/i]],
     ["phone", [/phone/i, /mobile/i, /whats\s*app/i, /\bcell\b/i]],
     ["first_name", [/first\s*name/i, /given\s*name/i]],
@@ -34,12 +35,16 @@
   // ---------- profile helpers ----------
   function profileValue(key, label, p) {
     const wantsUrl = /url|link|profile|https?/i.test(label);
-    const handle = (p.x_handle || "").replace(/^https?:\/\/(www\.)?(x|twitter)\.com\//i, "").replace(/^@/, "").replace(/\/$/, "");
+    const handle = (p.x_handle || "").replace(/^(https?:\/\/)?(www\.)?(x|twitter)\.com\//i, "").replace(/^@/, "").replace(/\/$/, "");
     switch (key) {
       case "x": return handle ? (wantsUrl ? `https://x.com/${handle}` : `@${handle}`) : "";
       case "linkedin": {
         const v = (p.linkedin || "").trim();
         return v && !/^https?:/i.test(v) ? `https://${v.replace(/^\/+/, "")}` : v;
+      }
+      case "telegram": {
+        const h = (p.telegram || "").trim().replace(/^(https?:\/\/)?(www\.)?t\.me\//i, "").replace(/^@/, "").replace(/\/$/, "");
+        return h ? (wantsUrl ? `https://t.me/${h}` : `@${h}`) : "";
       }
       case "first_name": return (p.name || "").trim().split(/\s+/)[0] || "";
       case "last_name": return (p.name || "").trim().split(/\s+/).slice(1).join(" ");

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Luma Autofill",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "Fill Luma event registration forms from your profile; AI drafts open questions for you to review. You always click submit yourself.",
   "permissions": ["storage"],
   "host_permissions": ["https://luma.com/*", "https://lu.ma/*", "https://api.anthropic.com/*"],
