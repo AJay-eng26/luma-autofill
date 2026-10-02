@@ -19,7 +19,7 @@
     ["phone", [/phone/i, /mobile/i, /whats\s*app/i, /\bcell\b/i]],
     ["first_name", [/first\s*name/i, /given\s*name/i]],
     ["last_name", [/last\s*name/i, /surname/i, /family\s*name/i]],
-    ["name", [/^(full\s*)?name\b/i, /your\s*(full\s*)?name/i]],
+    ["name", [/^(your\s*)?(full\s*)?name$/i, /^what('s| is) your (full )?name\??$/i]],
     ["company", [/company/i, /organi[sz]ation/i, /employer/i, /affiliation/i, /startup\s*name/i, /where do you work/i]],
     ["role", [/job\s*title/i, /\btitle\b/i, /\brole\b/i, /position/i, /occupation/i, /what do you do/i]],
     ["website", [/website/i, /portfolio/i, /personal\s*(site|url)/i]],

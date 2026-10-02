@@ -185,3 +185,11 @@ def test_reports_fields_that_did_not_stick(react_page):
     assert "couldn't be filled automatically" in text
     assert page.locator(".panel [data-luma-autofill=missing]").count() >= 1
     assert "Please enter: https://linkedin.com/in/ada" in page.inner_text(".panel")
+
+
+def test_name_rule_only_matches_own_name(page):
+    inject(page)
+    cls = lambda label: page.evaluate("(l) => window.__lumaAutofill.classify({kind: 'text', inputType: 'text', label: l})", label)
+    assert cls("Name") == "name"
+    assert cls("Full name") == "name"
+    assert cls("Name of your primary contact at OKX") is None

@@ -23,7 +23,7 @@ RULES: list[tuple[str, tuple[str, ...]]] = [
     ("phone", (r"phone", r"mobile", r"whats\s*app", r"cell")),
     ("first_name", (r"first\s*name", r"given\s*name")),
     ("last_name", (r"last\s*name", r"surname", r"family\s*name")),
-    ("name", (r"^(full\s*)?name\b", r"your\s*(full\s*)?name")),
+    ("name", (r"^(your\s*)?(full\s*)?name$", r"^what('s| is) your (full )?name\??$")),
     ("company", (r"company", r"organi[sz]ation", r"employer", r"affiliation", r"startup\s*name", r"where do you work")),
     ("role", (r"job\s*title", r"\btitle\b", r"\brole\b", r"position", r"occupation", r"what do you do")),
     ("website", (r"website", r"portfolio", r"personal\s*(site|url)")),

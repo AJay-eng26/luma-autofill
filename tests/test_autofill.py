@@ -42,6 +42,10 @@ def text_field(label, input_type="text"):
         ("Job Title", "text", "role"),
         ("Why do you want to attend? Tell us about your company and what you're building.", "text", None),
         ("How did you hear about us?", "text", None),
+        ("Name", "text", "name"),
+        ("Full name", "text", "name"),
+        ("Name of your primary contact at OKX", "text", None),
+        ("Who invited you? Name", "text", None),
     ],
 )
 def test_classify(label, input_type, key):
