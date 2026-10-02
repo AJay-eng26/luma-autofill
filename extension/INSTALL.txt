@@ -1,0 +1,36 @@
+LUMA AUTOFILL - fills Luma event registration forms for you
+===========================================================
+
+You always check the answers and click Luma's submit button yourself.
+
+INSTALL (about 5 minutes, works in Brave or Chrome)
+---------------------------------------------------
+1. Unzip this file: right-click it -> "Extract All..." -> Extract.
+   (Important: Brave can't load it while it is still a zip.)
+2. In Brave, go to:  brave://extensions     (Chrome: chrome://extensions)
+3. Turn on "Developer mode" (switch in the top-right corner).
+4. Click "Load unpacked" and select the unzipped folder that contains
+   manifest.json (the folder named "extension"). Click "Select Folder".
+5. Click the puzzle-piece icon at the top-right -> "Luma Autofill".
+   The settings page opens. Fill in YOUR details and click Save.
+
+AI ANSWERS (optional)
+---------------------
+For open questions ("Why do you want to attend?"), the extension asks
+Claude. That needs your own Anthropic API key:
+  console.anthropic.com -> API Keys -> Create Key -> copy it ->
+  paste into the "Anthropic API key" box in settings -> Save.
+Each form costs a few cents. Without a key, your profile answers still
+fill in and the open questions are left for you.
+
+USE
+---
+1. Open a Luma event.
+2. Click the purple "Autofill" button (bottom-right), or press Alt + A.
+3. Check the highlights:
+     green  = from your profile
+     yellow = AI draft, check it
+     red    = required but still empty, fill it in
+4. Click Luma's own submit button.
+
+Your details and API key are stored only in your own browser.

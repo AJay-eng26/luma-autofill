@@ -5,3 +5,4 @@ profile.json
 browser_profile/
 .pytest_cache/
 debug/
+dist/
